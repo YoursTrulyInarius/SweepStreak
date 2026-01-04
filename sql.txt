@@ -1,0 +1,234 @@
+-- Create database
+CREATE DATABASE IF NOT EXISTS sweepstreak;
+USE sweepstreak;
+
+-- Users table (teachers and students)
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    profile_picture VARCHAR(255),
+    role ENUM('teacher', 'student') NOT NULL,
+    birthday DATE NULL,
+    age INT NULL,
+    phone VARCHAR(20) NULL,
+    level INT DEFAULT 1,
+    experience INT DEFAULT 0,
+    coins INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    -- optional columns for avatar customization
+    avatar_style ENUM('pixel', 'round', 'square') DEFAULT 'pixel',
+    avatar_color VARCHAR(7) DEFAULT '#3a86ff',
+    avatar_icon VARCHAR(50) DEFAULT 'student',
+    avatar_accessories VARCHAR(255) DEFAULT 'none'
+);
+
+-- Classes table
+CREATE TABLE IF NOT EXISTS classes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(10) UNIQUE NOT NULL,
+    teacher_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Groups table
+CREATE TABLE IF NOT EXISTS groups (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    class_id INT NOT NULL,
+    is_deployed BOOLEAN DEFAULT FALSE,
+    deployment_area VARCHAR(255) NULL,
+    deployment_date DATE NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+);
+
+-- Group members table
+CREATE TABLE IF NOT EXISTS group_members (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    student_id INT NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_group_member (group_id, student_id)
+);
+
+-- Tasks table
+CREATE TABLE IF NOT EXISTS tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    cleaning_area VARCHAR(255) NOT NULL,
+    class_id INT NOT NULL,
+    points INT DEFAULT 50,
+    due_date DATE NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+);
+
+-- Submissions table
+CREATE TABLE IF NOT EXISTS submissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    task_id INT NOT NULL,
+    group_id INT NOT NULL,
+    image_path VARCHAR(500) NOT NULL,
+    submitted_by INT NOT NULL,
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    notes TEXT,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    approved_at TIMESTAMP NULL,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (submitted_by) REFERENCES users(id) ON DELETE CASCADE,
+    -- Prevent multiple pending submissions for same task+group
+    UNIQUE KEY unique_pending_task_group (task_id, group_id, status)
+);
+
+-- Attendance table
+DROP TABLE IF EXISTS attendance;
+CREATE TABLE attendance (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    status ENUM('present', 'absent') NOT NULL,
+    attendance_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_student_date (student_id, attendance_date)
+);
+
+-- Points and streaks table
+CREATE TABLE IF NOT EXISTS points (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    points INT DEFAULT 0,
+    streak INT DEFAULT 0,
+    last_submission_date DATE,
+    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_group_points (group_id)
+);
+
+-- Badges table
+CREATE TABLE IF NOT EXISTS badges (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    icon VARCHAR(255)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Group badges table
+CREATE TABLE IF NOT EXISTS group_badges (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    badge_id INT NOT NULL,
+    awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (badge_id) REFERENCES badges(id) ON DELETE CASCADE
+);
+
+-- School-wide settings table
+CREATE TABLE IF NOT EXISTS school_settings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    school_name VARCHAR(255) NOT NULL DEFAULT 'Our School',
+    enable_leaderboard BOOLEAN DEFAULT TRUE,
+    leaderboard_type ENUM('points', 'streaks', 'tasks_completed') DEFAULT 'points',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default school settings
+INSERT IGNORE INTO school_settings (school_name) VALUES ('Our School');
+
+-- Insert badge types
+INSERT IGNORE INTO badges (name, description, icon) VALUES 
+('First Clean', 'Complete your first cleaning task', '⭐'),
+('Streak Master', 'Maintain a 7-day cleaning streak', '🔥'),
+('Perfect Week', 'Complete all tasks for a week', '🏆'),
+('Team Player', 'Complete tasks with full group attendance', '👥'),
+('Early Bird', 'Submit cleaning task before 8 AM', '🌅');
+
+-- Update badges to use emojis
+UPDATE badges SET icon = '⭐' WHERE name = 'First Clean';
+UPDATE badges SET icon = '🔥' WHERE name = 'Streak Master';
+UPDATE badges SET icon = '🏆' WHERE name = 'Perfect Week';
+UPDATE badges SET icon = '👥' WHERE name = 'Team Player';
+UPDATE badges SET icon = '🌅' WHERE name = 'Early Bird';
+
+-- Create task assignments table
+CREATE TABLE IF NOT EXISTS task_assignments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    task_id INT NOT NULL,
+    group_id INT NOT NULL,
+    assigned_date DATE NOT NULL,
+    assigned_by INT NOT NULL,
+    completed BOOLEAN DEFAULT FALSE,
+    completed_at TIMESTAMP NULL,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_task_group_date (task_id, group_id, assigned_date)
+);
+
+-- Leaderboard queries (examples)
+-- First leaderboard
+SELECT 
+    g.id AS group_id,
+    g.name AS group_name,
+    c.name AS class_name,
+    u.name AS teacher_name,
+    p.points AS total_points,
+    p.streak AS current_streak,
+    COUNT(DISTINCT gm.student_id) AS group_size,
+    COUNT(DISTINCT s.id) AS tasks_completed,
+    COUNT(DISTINCT gb.badge_id) AS badges_earned
+FROM groups g
+JOIN classes c ON g.class_id = c.id
+JOIN users u ON c.teacher_id = u.id
+LEFT JOIN points p ON g.id = p.group_id
+LEFT JOIN group_members gm ON g.id = gm.group_id
+LEFT JOIN submissions s ON g.id = s.group_id AND s.status = 'approved'
+LEFT JOIN group_badges gb ON g.id = gb.group_id
+GROUP BY g.id, g.name, c.name, u.name, p.points, p.streak
+ORDER BY p.points DESC, p.streak DESC, tasks_completed DESC;
+
+-- Second leaderboard
+SELECT 
+    g.id AS group_id,
+    g.name AS group_name,
+    c.name AS class_name,
+    p.points AS total_points,
+    p.streak AS current_streak,
+    COUNT(DISTINCT gm.student_id) AS group_size
+FROM groups g
+JOIN classes c ON g.class_id = c.id
+LEFT JOIN points p ON g.id = p.group_id
+LEFT JOIN group_members gm ON g.id = gm.group_id
+GROUP BY g.id, g.name, c.name, p.points, p.streak
+ORDER BY p.points DESC, p.streak DESC;
+
+-- Additional modifications to users table columns:
+-- Since not supported in one statement, manually run these if needed:
+-- ALTER TABLE users DROP COLUMN profile_picture;
+-- ALTER TABLE users ADD COLUMN avatar_style ENUM('pixel', 'round', 'square') DEFAULT 'pixel';
+-- ALTER TABLE users ADD COLUMN avatar_color VARCHAR(7) DEFAULT '#3a86ff';
+-- ALTER TABLE users ADD COLUMN avatar_icon VARCHAR(50) DEFAULT 'student';
+-- ALTER TABLE users ADD COLUMN avatar_accessories VARCHAR(255) DEFAULT 'none';
+
+-- To check columns existence and modify accordingly, you need to do it manually or via scripts outside of pure SQL.
+
+-- Drop and recreate attendance table
+DROP TABLE IF EXISTS attendance;
+CREATE TABLE attendance (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    status ENUM('present', 'absent') NOT NULL DEFAULT 'present',
+    attendance_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_student_date (student_id, attendance_date)
+);
+
+-- Note: The code for adding avatar fields to users, creating avatar icons/accessories, and insertion of default data remains as is, since schema changes like dropping columns must be done manually if they exist.
