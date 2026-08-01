@@ -75,3 +75,37 @@ SweepStreak is a gamified classroom cleaning management system that motivates st
 
 ---
 *Built for the SweepStreak Project.*
+
+## Recent Fixes (local development)
+
+These changes were applied to stabilize the development build and remove PHP warning output that was breaking pages during render:
+
+- Fixed include path resolution in `includes/header.php` to use a deterministic path (`__DIR__`) so `config/database.php` is required reliably.
+- Guarded session accesses across multiple pages to avoid "Undefined array key" warnings when `$_SESSION['name']` or `$_SESSION['role']` are not set. This prevents stray warning text from corrupting HTML output.
+- Made the home link computation in the header safe by checking `$_SESSION['role']` before using it.
+- Hardened user avatar/name rendering in `includes/header.php` to only output when session values exist and to escape output with `htmlspecialchars()`.
+
+Files touched (high level):
+
+- `includes/header.php`
+- `assign_badges.php`, `assign_tasks.php`, `dashboard.php`, `join_class.php`
+- `leaderboard.php`, `review_submissions.php`, `student_profile.php`, `submit_task.php`
+- `teacher_dashboard.php`, `class_details.php`, `create_class.php`, `manage_class.php`
+- `manage_group_members.php`, `manage_groups.php`, `view_classes.php`
+
+These edits aim to make the app safe to load even when session state is incomplete during development.
+
+## Next Step: Proper Folder Structure (recommended)
+
+To make the codebase more maintainable and to avoid similar path/session issues in the future, the recommended next step is to adopt a clearer folder structure and a centralized initialization file. Suggested minimal changes:
+
+- Create a single entry point for public files (e.g., a `public/` folder) and move front-facing PHP files there (`index.php`, `login.php`, `register.php`, etc.).
+- Move include-only PHP files into `src/` or keep them in `includes/` but reference them from a single `bootstrap` or `init.php` file.
+- Add an `app/config.php` or `includes/init.php` that:
+    - Calls `session_start()` once.
+    - Loads environment-specific config (DB credentials) from `config/database.php`.
+    - Sets error reporting for development vs production (e.g., `ini_set('display_errors', 1)` for dev, `0` for prod) and enables error logging.
+- Normalize require/include calls to use `__DIR__` or absolute paths to avoid relative-path fragility.
+- Optionally add a small `helpers/session.php` with functions like `session_get($key, $default)` to centralize checks and avoid repeated `isset()` patterns.
+
+If you'd like, I can scaffold the folder structure and create a minimal `includes/init.php` and update a few entry-point files to use it. Tell me whether you prefer the `public/` + `app/` layout (recommended) or a simpler `includes/` + root entry layout and I'll implement it.
