@@ -232,3 +232,80 @@ CREATE TABLE attendance (
 );
 
 -- Note: The code for adding avatar fields to users, creating avatar icons/accessories, and insertion of default data remains as is, since schema changes like dropping columns must be done manually if they exist.
+
+-- Class members table (students join classes first, then get assigned to groups)
+CREATE TABLE IF NOT EXISTS class_members (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    class_id INT NOT NULL,
+    student_id INT NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_class_student (class_id, student_id)
+);
+
+-- Avatar Icons table
+CREATE TABLE IF NOT EXISTS avatar_icons (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    display_name VARCHAR(100) NOT NULL,
+    icon VARCHAR(10) NOT NULL, -- This stores the actual emoji
+    category VARCHAR(50) DEFAULT 'general',
+    unlocked_by_default BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Avatar Accessories table
+CREATE TABLE IF NOT EXISTS avatar_accessories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    display_name VARCHAR(100) NOT NULL,
+    icon VARCHAR(10) NOT NULL, -- This stores the actual emoji
+    category VARCHAR(50) DEFAULT 'general',
+    required_level INT DEFAULT 1,
+    unlocked_by_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Student unlocks table (for tracking unlocked items)
+CREATE TABLE IF NOT EXISTS student_unlocks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    item_type ENUM('icon', 'accessory') NOT NULL,
+    item_id INT NOT NULL,
+    unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_student_unlock (student_id, item_type, item_id)
+);
+
+-- Insert default avatar icons
+INSERT IGNORE INTO avatar_icons (name, display_name, icon, category, unlocked_by_default) VALUES 
+('student', 'Student', '👤', 'basic', TRUE),
+('warrior', 'Warrior', '⚔️', 'characters', TRUE),
+('wizard', 'Wizard', '🧙', 'characters', TRUE),
+('robot', 'Robot', '🤖', 'characters', TRUE),
+('cat', 'Cat', '🐱', 'animals', TRUE),
+('dog', 'Dog', '🐶', 'animals', TRUE),
+('dragon', 'Dragon', '🐉', 'fantasy', FALSE),
+('lion', 'Lion', '🦁', 'animals', FALSE),
+('phoenix', 'Phoenix', '🔥', 'fantasy', FALSE),
+('star', 'Star', '⭐', 'symbols', TRUE),
+('shield', 'Shield', '🛡️', 'symbols', TRUE),
+('sword', 'Sword', '⚔️', 'symbols', TRUE),
+('book', 'Book', '📚', 'symbols', TRUE),
+('lightbulb', 'Light Bulb', '💡', 'symbols', TRUE),
+('rocket', 'Rocket', '🚀', 'symbols', FALSE);
+
+-- Insert default avatar accessories
+INSERT IGNORE INTO avatar_accessories (name, display_name, icon, category, required_level, unlocked_by_default) VALUES 
+('none', 'None', '', 'basic', 1, TRUE),
+('crown', 'Crown', '👑', 'headwear', 5, FALSE),
+('wizard_hat', 'Wizard Hat', '🎩', 'headwear', 3, FALSE),
+('cap', 'Baseball Cap', '🧢', 'headwear', 2, FALSE),
+('glasses', 'Cool Glasses', '😎', 'face', 2, FALSE),
+('sunglasses', 'Sunglasses', '🕶️', 'face', 4, FALSE),
+('medal', 'Gold Medal', '🥇', 'achievements', 10, FALSE),
+('ribbon', 'Ribbon', '🎗️', 'decorations', 2, FALSE),
+('sparkles', 'Sparkles', '✨', 'effects', 6, FALSE),
+('fire', 'Fire Effect', '🔥', 'effects', 8, FALSE),
+('star_effect', 'Star Effect', '⭐', 'effects', 7, FALSE);

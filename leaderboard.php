@@ -13,9 +13,9 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$user_id = $_SESSION['user_id'];
-$user_role = $_SESSION['role'];
-$user_name = $_SESSION['name'];
+$user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+$user_role = isset($_SESSION['role']) ? $_SESSION['role'] : '';
+$user_name = isset($_SESSION['name']) ? $_SESSION['name'] : '';
 
 // Get leaderboard data
 $leaderboard_data = [];

@@ -7,13 +7,13 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once 'config/database.php';
 require_once 'includes/auth.php';
 
-if ($_SESSION['role'] != 'teacher') {
+if (!isset($_SESSION['role']) || $_SESSION['role'] != 'teacher') {
     header('Location: dashboard.php');
     exit();
 }
 
-$teacher_id = $_SESSION['user_id'];
-$teacher_name = $_SESSION['name'];
+$teacher_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+$teacher_name = isset($_SESSION['name']) ? $_SESSION['name'] : '';
 
 // Get teacher's classes
 $classes = [];

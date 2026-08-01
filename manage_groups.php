@@ -3,12 +3,12 @@ session_start();
 require_once 'config/database.php';
 require_once 'includes/auth.php';
 
-if ($_SESSION['role'] != 'teacher') {
-    header('Location: dashboard.php');
-    exit();
+if (!isset($_SESSION['role']) || $_SESSION['role'] != 'teacher') {
+  header('Location: dashboard.php');
+  exit();
 }
 
-$teacher_id = $_SESSION['user_id'];
+$teacher_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {

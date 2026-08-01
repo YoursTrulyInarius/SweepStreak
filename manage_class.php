@@ -2,12 +2,11 @@
 require_once 'includes/auth.php';
 require_once 'config/database.php';
 
-if ($_SESSION['role'] != 'teacher') {
+$teacher_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+if (!isset($_SESSION['role']) || $_SESSION['role'] != 'teacher') {
     header('Location: dashboard.php');
     exit();
 }
-
-$teacher_id = $_SESSION['user_id'];
 $class_id = $_GET['id'] ?? null;
 
 if (!$class_id) {

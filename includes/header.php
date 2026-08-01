@@ -3,12 +3,12 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-// Include database configuration (with error handling)
-try {
-    require_once 'config/database.php';
-} catch (Exception $e) {
-    // Log error but don't stop execution
-    error_log("Database config error: " . $e->getMessage());
+// Include database configuration (use a robust path check)
+$dbConfigPath = __DIR__ . '/../config/database.php';
+if (file_exists($dbConfigPath)) {
+    require_once $dbConfigPath;
+} else {
+    error_log("Database config not found: " . $dbConfigPath);
 }
 ?>
 <!DOCTYPE html>
@@ -357,7 +357,13 @@ try {
     
     <nav class="game-nav">
         <div class="container">
-            <a class="game-logo" href="<?php echo isset($_SESSION['user_id']) ? ($_SESSION['role'] == 'teacher' ? 'teacher_dashboard.php' : 'dashboard.php') : 'index.php'; ?>">
+            <?php
+            $home_link = 'index.php';
+            if (isset($_SESSION['user_id'])) {
+                $home_link = (isset($_SESSION['role']) && $_SESSION['role'] === 'teacher') ? 'teacher_dashboard.php' : 'dashboard.php';
+            }
+            ?>
+            <a class="game-logo" href="<?php echo $home_link; ?>">
                 <i class="fas fa-broom"></i>
                 SweepStreak
             </a>
@@ -367,12 +373,15 @@ try {
                     <!-- User Info & Logout -->
                     <div class="user-menu">
                         <div class="user-info">
-                            <div class="user-avatar">
-                                <?php echo strtoupper(substr($_SESSION['name'], 0, 1)); ?>
-                            </div>
+                            <?php
+                            $user_name = isset($_SESSION['name']) ? (string)$_SESSION['name'] : '';
+                            $user_role = isset($_SESSION['role']) ? (string)$_SESSION['role'] : '';
+                            $avatar_letter = $user_name !== '' ? strtoupper(substr($user_name, 0, 1)) : '';
+                            ?>
+                            <div class="user-avatar"><?php echo $avatar_letter; ?></div>
                             <div class="user-details">
-                                <span class="user-name"><?php echo htmlspecialchars($_SESSION['name']); ?></span>
-                                <span class="user-role"><?php echo ucfirst($_SESSION['role']); ?></span>
+                                <span class="user-name"><?php echo htmlspecialchars($user_name); ?></span>
+                                <span class="user-role"><?php echo $user_role !== '' ? htmlspecialchars(ucfirst($user_role)) : ''; ?></span>
                             </div>
                         </div>
                         <a href="logout.php" class="logout-btn" title="Logout">

@@ -3,9 +3,9 @@ require_once 'includes/auth.php';
 require_once 'config/database.php';
 
 // Get student data
-$user_id = $_SESSION['user_id'];
-$student_name = $_SESSION['name'];
-$role = $_SESSION['role'];
+$user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+$student_name = isset($_SESSION['name']) ? $_SESSION['name'] : '';
+$role = isset($_SESSION['role']) ? $_SESSION['role'] : '';
 
 // Initialize variables
 $group = null;

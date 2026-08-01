@@ -2,13 +2,13 @@
 require_once 'includes/auth.php';
 require_once 'config/database.php';
 
-if ($_SESSION['role'] != 'student') {
+if (!isset($_SESSION['role']) || $_SESSION['role'] != 'student') {
     header('Location: dashboard.php');
     exit();
 }
 
-$student_id = $_SESSION['user_id'];
-$student_name = $_SESSION['name'];
+$student_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+$student_name = isset($_SESSION['name']) ? $_SESSION['name'] : '';
 
 // Initialize variables
 $student_data = [];
@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
             $stmt->execute([$name, $birthday, $phone, $address, $bio, $student_id]);
 
             // Update session name if changed
-            if ($name != $_SESSION['name']) {
+            if ($name != (isset($_SESSION['name']) ? $_SESSION['name'] : '')) {
                 $_SESSION['name'] = $name;
             }
 

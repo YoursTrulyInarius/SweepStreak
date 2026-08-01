@@ -7,12 +7,12 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once 'config/database.php';
 require_once 'includes/auth.php';
 
-if ($_SESSION['role'] != 'teacher') {
+if (!isset($_SESSION['role']) || $_SESSION['role'] != 'teacher') {
     header('Location: dashboard.php');
     exit();
 }
 
-$teacher_id = $_SESSION['user_id'];
+$teacher_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
 
 // Get group ID from URL
 $group_id = isset($_GET['group_id']) ? intval($_GET['group_id']) : 0;
