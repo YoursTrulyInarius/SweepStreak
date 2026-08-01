@@ -108,4 +108,3 @@ To make the codebase more maintainable and to avoid similar path/session issues 
 - Normalize require/include calls to use `__DIR__` or absolute paths to avoid relative-path fragility.
 - Optionally add a small `helpers/session.php` with functions like `session_get($key, $default)` to centralize checks and avoid repeated `isset()` patterns.
 
-If you'd like, I can scaffold the folder structure and create a minimal `includes/init.php` and update a few entry-point files to use it. Tell me whether you prefer the `public/` + `app/` layout (recommended) or a simpler `includes/` + root entry layout and I'll implement it.
