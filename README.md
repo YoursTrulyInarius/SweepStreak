@@ -95,16 +95,6 @@ Files touched (high level):
 
 These edits aim to make the app safe to load even when session state is incomplete during development.
 
-## Next Step: Proper Folder Structure (recommended)
+## Next Step: Proper Folder Structure
 
-To make the codebase more maintainable and to avoid similar path/session issues in the future, the recommended next step is to adopt a clearer folder structure and a centralized initialization file. Suggested minimal changes:
-
-- Create a single entry point for public files (e.g., a `public/` folder) and move front-facing PHP files there (`index.php`, `login.php`, `register.php`, etc.).
-- Move include-only PHP files into `src/` or keep them in `includes/` but reference them from a single `bootstrap` or `init.php` file.
-- Add an `app/config.php` or `includes/init.php` that:
-    - Calls `session_start()` once.
-    - Loads environment-specific config (DB credentials) from `config/database.php`.
-    - Sets error reporting for development vs production (e.g., `ini_set('display_errors', 1)` for dev, `0` for prod) and enables error logging.
-- Normalize require/include calls to use `__DIR__` or absolute paths to avoid relative-path fragility.
-- Optionally add a small `helpers/session.php` with functions like `session_get($key, $default)` to centralize checks and avoid repeated `isset()` patterns.
-
+To make the codebase more maintainable and to avoid similar path/session issues in the future, the next step is to adopt a clearer folder structure and a centralized initialization file.
