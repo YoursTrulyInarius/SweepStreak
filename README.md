@@ -1,5 +1,4 @@
 # SweepStreak 🧹✨
-next
 
 > **Transform classroom cleaning into an engaging game.**
 
